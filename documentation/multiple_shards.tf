@@ -15,19 +15,19 @@ replicas = [
     server_type   = "SMALL-1C-2G"
   },
 
-  // Asia replicas
+  // America replicas
   {
     replica_name  = "clickhouse-03"
-    shard_name    = "shard-asia"
+    shard_name    = "shard-america"
     provider_name = "hetzner"
-    datacenter    = "fsn1"
+    datacenter    = "ash"
     server_type   = "SMALL-1C-2G"
   },
   {
     replica_name  = "clickhouse-04"
-    shard_name    = "shard-asia"
+    shard_name    = "shard-america"
     provider_name = "hetzner"
-    datacenter    = "fsn1"
+    datacenter    = "ash"
     server_type   = "SMALL-1C-2G"
   }
 ]

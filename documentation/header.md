@@ -14,7 +14,7 @@ ClickHouse Keeper provides the coordination system for data replication.
 
 We strongly recommend you to read the ClickHouse Replication documentation https://clickhouse.com/docs/en/architecture/replication
 
-![Cluster architecture](documentation/cluster_architecture.png)
+![Cluster architecture](https://raw.githubusercontent.com/elestio-examples/terraform-elestio-clickhouse-cluster/main/documentation/cluster_architecture.png)
 
 ## Elestio
 
@@ -26,6 +26,8 @@ Elestio is a Fully Managed DevOps platform that helps you deploy services withou
 The list of all services you can deploy with Elestio is [here](https://elest.io/fully-managed-services). The list is growing, so if you don't see what you need, let us know.
 
 ## Terraform
+
+![Terraform architecture](https://raw.githubusercontent.com/elestio-examples/terraform-elestio-clickhouse-cluster/main/documentation/terraform_architecture.png)
 
 This module :
 

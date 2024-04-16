@@ -16,7 +16,7 @@ ClickHouse Keeper provides the coordination system for data replication.
 
 We strongly recommend you to read the ClickHouse Replication documentation https://clickhouse.com/docs/en/architecture/replication
 
-![Cluster architecture](documentation/cluster\_architecture.png)
+![Cluster architecture](https://raw.githubusercontent.com/elestio-examples/terraform-elestio-clickhouse-cluster/main/documentation/cluster_architecture.png)
 
 ## Elestio
 
@@ -28,6 +28,8 @@ Elestio is a Fully Managed DevOps platform that helps you deploy services withou
 The list of all services you can deploy with Elestio is [here](https://elest.io/fully-managed-services). The list is growing, so if you don't see what you need, let us know.
 
 ## Terraform
+
+![Terraform architecture](https://raw.githubusercontent.com/elestio-examples/terraform-elestio-clickhouse-cluster/main/documentation/terraform_architecture.png)
 
 This module :
 
@@ -185,7 +187,7 @@ resource "elestio_project" "project" {
 }
 
 module "cluster" {
-  source = "../.."
+  source = "elestio-examples/clickhouse-cluster/elestio"
 
   project_id          = elestio_project.project.id
   cluster_name        = "MyCluster"
@@ -709,7 +711,7 @@ ClickHouse always has at least one shard for your data, so if you do not split t
 Sharding data across multiple servers can be used to divide the load.
 
 You can for example split the data by region.
-The next configuration create a cluster with 2 shards (europe and asia) and 2 replicas per shard:
+The next configuration create a cluster with 2 shards (europe and america) and 2 replicas per shard:
 
 ```hcl
 replicas = [
@@ -729,25 +731,25 @@ replicas = [
     server_type   = "SMALL-1C-2G"
   },
 
-  // Asia replicas
+  // America replicas
   {
     replica_name  = "clickhouse-03"
-    shard_name    = "shard-asia"
+    shard_name    = "shard-america"
     provider_name = "hetzner"
-    datacenter    = "fsn1"
+    datacenter    = "ash"
     server_type   = "SMALL-1C-2G"
   },
   {
     replica_name  = "clickhouse-04"
-    shard_name    = "shard-asia"
+    shard_name    = "shard-america"
     provider_name = "hetzner"
-    datacenter    = "fsn1"
+    datacenter    = "ash"
     server_type   = "SMALL-1C-2G"
   }
 ]
 ```
 
-Europe replicas `clickhouse-01` and `clickhouse-02` will replicate the data between them, and Asia replicas `clickhouse-03` and `clickhouse-04` will replicate the data between them.
+Europe replicas `clickhouse-01` and `clickhouse-02` will replicate the data between them, and America replicas `clickhouse-03` and `clickhouse-04` will replicate the data between them.
 
 ## Need help?
 

@@ -435,13 +435,13 @@ content: |-
   Sharding data across multiple servers can be used to divide the load.
 
   You can for example split the data by region.
-  The next configuration create a cluster with 2 shards (europe and asia) and 2 replicas per shard:
+  The next configuration create a cluster with 2 shards (europe and america) and 2 replicas per shard:
 
   ```hcl
   {{ include "documentation/multiple_shards.tf" }}
   ```
 
-  Europe replicas `clickhouse-01` and `clickhouse-02` will replicate the data between them, and Asia replicas `clickhouse-03` and `clickhouse-04` will replicate the data between them.
+  Europe replicas `clickhouse-01` and `clickhouse-02` will replicate the data between them, and America replicas `clickhouse-03` and `clickhouse-04` will replicate the data between them.
 
   {{ .Footer }}
   {{ .Inputs }}

@@ -30,7 +30,7 @@ resource "elestio_project" "project" {
 }
 
 module "cluster" {
-  source = "../.."
+  source = "elestio-examples/clickhouse-cluster/elestio"
 
   project_id          = elestio_project.project.id
   cluster_name        = "MyCluster"
