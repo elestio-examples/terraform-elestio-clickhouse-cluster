@@ -1,0 +1,97 @@
+<clickhouse replace="true">
+    <!-- CLICKHOUSE SERVER -->
+    <logger>
+        <level>debug</level>
+        <log>/var/log/clickhouse-server/clickhouse-server.log</log>
+        <errorlog>/var/log/clickhouse-server/clickhouse-server.err.log</errorlog>
+        <size>1000M</size>
+        <count>3</count>
+    </logger>
+    <user_directories>
+        <users_xml>
+            <path>users.xml</path>
+        </users_xml>
+        <local_directory>
+            <path>/var/lib/clickhouse/access/</path>
+        </local_directory>
+    </user_directories>
+    <distributed_ddl>
+        <path>/clickhouse/task_queue/ddl</path>
+    </distributed_ddl>
+    <display_name>cluster ${cluster_name} shard ${current_replica.local_field.shard_name} replica: ${current_replica.local_field.replica_name}</display_name>
+    <listen_host>0.0.0.0</listen_host>
+    <http_port>28123</http_port>
+    <tcp_port>29000</tcp_port>
+    <mysql_port>24306</mysql_port>
+    <postgresql_port>25432</postgresql_port>
+    <interserver_http_credentials>
+        <user>interserver</user>
+        <password>${clickhouse_password}</password>
+    </interserver_http_credentials>
+    <remote_servers>
+        <${cluster_name}>
+            <secret>${clickhouse_password}</secret>
+%{ for shard_name, replicas in grouped_replicas_by_shard ~} 
+            <shard>
+                <internal_replication>true</internal_replication>
+%{ for replica in replicas ~}
+                <replica>
+                    <host>${replica.cname}</host>
+                    <port>29000</port>
+                    <user>root</user>
+                    <password>${clickhouse_password}</password>
+                </replica>
+%{ endfor ~}
+            </shard>
+%{ endfor ~}
+        </${cluster_name}>
+    </remote_servers>
+    <zookeeper>
+        <identity>user:${clickhouse_password}</identity>
+%{ for shard_name, replicas in grouped_replicas_by_shard ~}
+%{ for replica in replicas ~}
+        <node>
+            <host>${replica.global_ip}</host>
+            <port>9181</port>
+        </node>
+%{ endfor ~}
+%{ endfor ~}
+    </zookeeper>
+    <macros>
+        <shard>${current_replica.local_field.shard_name}</shard>
+        <replica>${current_replica.local_field.replica_name}</replica>
+        <cluster>${cluster_name}</cluster>
+    </macros>
+    <default_replica_path>/clickhouse/tables/{shard}/{database}/{table}</default_replica_path>
+    <default_replica_name>{replica}</default_replica_name>
+
+    <!-- CLICKHOUSE KEEPER -->
+    <keeper_server>
+        <tcp_port>9181</tcp_port>
+        <server_id>${current_replica.elestio_id}</server_id>
+        <log_storage_path>/var/lib/clickhouse/coordination/log</log_storage_path>
+        <snapshot_storage_path>/var/lib/clickhouse/coordination/snapshots</snapshot_storage_path>
+        <identity>user:${base64encode(clickhouse_password)}</identity>
+        <coordination_settings>
+            <operation_timeout_ms>10000</operation_timeout_ms>
+            <session_timeout_ms>30000</session_timeout_ms>
+            <raft_logs_level>information</raft_logs_level>
+        </coordination_settings>
+        <raft_configuration>
+%{ for shard_name, replicas in grouped_replicas_by_shard ~}
+%{ for replica in replicas ~}
+            <server>
+                <id>${replica.elestio_id}</id>
+                <hostname>${replica.global_ip}</hostname>
+                <port>9234</port>
+            </server>
+%{ endfor ~}
+%{ endfor ~}
+        </raft_configuration>
+          <coordination_settings>
+          <operation_timeout_ms>10000</operation_timeout_ms>
+          <session_timeout_ms>30000</session_timeout_ms>
+          <raft_logs_level>information</raft_logs_level>
+        </coordination_settings>
+    </keeper_server>
+</clickhouse>

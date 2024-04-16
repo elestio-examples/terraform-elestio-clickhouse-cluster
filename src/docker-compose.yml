@@ -1,0 +1,25 @@
+version: '3.8'
+services:
+  clickhouse-server:
+    image: 'clickhouse/clickhouse-server:${SOFTWARE_VERSION_TAG}'
+    container_name: 'clickhouse-server'
+    restart: 'always'
+    volumes:
+      - '/opt/app/config/config.xml:/etc/clickhouse-server/config.d/config.xml'
+      - '/opt/app/config/users.xml:/etc/clickhouse-server/users.d/users.xml'
+      - '/opt/app/data/clickhouse-server:/var/lib/clickhouse'
+      - '/opt/app/log/clickhouse-server:/var/log/clickhouse-server'
+    network_mode: 'host'
+
+  tabix:
+    image: 'spoonest/clickhouse-tabix-web-client'
+    restart: 'always'
+    depends_on:
+      - 'clickhouse-server'
+    ports:
+      - '172.17.0.1:28124:80'
+    environment:
+      - 'CH_NAME=clickhouse'
+      - 'CH_HOST=https://${CNAME}:18123'
+      - 'CH_LOGIN=root'
+      - 'CH_PASSWORD=${SOFTWARE_PASSWORD}'

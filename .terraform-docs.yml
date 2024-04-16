@@ -1,0 +1,489 @@
+# # see: https://terraform-docs.io/user-guide/configuration/version
+# version: ">= 0.10, < 0.12"
+
+# see: https://terraform-docs.io/user-guide/configuration/formatter
+formatter: markdown table
+
+# see: https://terraform-docs.io/user-guide/configuration/header-from
+header-from: documentation/header.md
+
+# see: https://terraform-docs.io/user-guide/configuration/footer-from
+footer-from: documentation/footer.md
+
+# see: https://terraform-docs.io/user-guide/configuration/recursive
+# recursive:
+#   enabled: false
+#   path: modules
+
+# see: https://terraform-docs.io/user-guide/configuration/sections
+sections:
+  hide: []
+  show: []
+
+# see: https://terraform-docs.io/user-guide/configuration/content
+content: |-
+  {{ .Header }}
+
+  ## Usage
+
+  If you want to use this module by itself, you can use the following code:
+
+  ```hcl
+  {{ include "documentation/usage.tf" }}
+  ```
+
+  ## Complete example
+
+  If you want to deploy everything at once (replicas, load balancer), you can follow this example.
+
+  We will do the following:
+  - Install terraform and copy a ready-to-use configuration
+  - Deploy the cluster with 3 replicas
+  - Output the cluster information
+  - Verify that it's working
+  - Add a fourth replica
+
+  ### Install Terraform
+
+  First, let's install the Terraform client on your machine: https://learn.hashicorp.com/tutorials/terraform/install-cli
+
+  <details><summary>Instructions for MacOS:</summary>
+
+  ```bash
+  brew tap hashicorp/tap
+  brew install hashicorp/tap/terraform
+  terraform -v
+  ```
+
+  </details>
+
+  ### Copy the configuration
+
+  Create a new directory and the following files step by step:
+
+  ```response
+  .
+  ├── main.tf
+  ├── load_balancer.tf (optional)
+  ├── terraform.tfvars
+  ├── terraform_rsa
+  ├── terraform_rsa.pub
+  └── .gitignore
+  ```
+
+  <details><summary>Create `main.tf` file with this content:</summary>
+
+  ```hcl
+  {{ include "examples/single_shard_cluster/main.tf" }}
+  ```
+
+  </details>
+
+  <details><summary>If you want to add a load balancer, create `load_balancer.tf` file with this content:</summary>
+
+  ```hcl
+  {{ include "examples/single_shard_cluster/load_balancer.tf" }}
+  ```
+
+  </details>
+
+  <details><summary>Create `terraform.tfvars` file with this content and fill it with your sensitive information:</summary>
+
+  ```hcl
+  {{ include "examples/single_shard_cluster/terraform.tfvars.example" }}
+  ```
+
+  </details>
+
+  <details><summary>Generate a dedicated SSH Key (required by the module to configure the replicas):</summary>
+
+  ```bash
+  ssh-keygen -t rsa -f terraform_rsa
+  ```
+  </details>
+
+  <details><summary>If you want to commit your code, create `.gitignore` file with this content:</summary>
+
+  ```plaintext
+  {{ include "examples/single_shard_cluster/.gitignore" }}
+  ```
+
+  </details>
+
+  Your configuration is ready.
+
+  ### Deploy the cluster
+
+  Run the following commands:
+
+  ```bash
+  terraform init
+  terraform apply
+  ```
+
+  It will ask you to confirm the deployment. Type `yes` and press `Enter`.
+
+  The deployment will take a few minutes.
+
+  ### Output the cluster information
+
+  You can show all the information about the created resources with the `terraform show` command.
+
+  ```bash
+  terraform show
+  ```
+
+  The output is large so you can use the custom outputs for essential information.
+
+  The access information to the replicas:
+
+  ```bash
+  terraform output replicas_admins
+  ```
+
+  ```response
+  {
+    "clickhouse-01" = {
+      "password" = "******"
+      "url" = "https://clickhouse-01-u525.vm.elestio.app:28125/"
+      "user" = "root"
+    }
+    "clickhouse-02" = {
+      "password" = "******"
+      "url" = "https://clickhouse-02-u525.vm.elestio.app:28125/"
+      "user" = "root"
+    }
+    "clickhouse-03" = {
+      "password" = "******"
+      "url" = "https://clickhouse-03-u525.vm.elestio.app:28125/"
+      "user" = "root"
+    }
+  }
+  ```
+
+  The cname of the replicas:
+
+  ```bash
+  terraform output replicas_cnames
+  ```
+
+  ```response
+  {
+    "clickhouse-01" = "clickhouse-01-u525.vm.elestio.app"
+    "clickhouse-02" = "clickhouse-02-u525.vm.elestio.app"
+    "clickhouse-03" = "clickhouse-03-u525.vm.elestio.app"
+  }
+  ```
+
+  The ports used by the replicas:
+
+  ```bash
+  terraform output replicas_ports
+  ```
+
+  ```response
+  {
+    "18123" = "HTTPS port"
+    "24306" = "MySQL port"
+    "25432" = "PostgreSQL port"
+    "28123" = "HTTP port"
+    "29000" = "Native TCP port (used by `clickhouse-server` and `clickhouse-client`)"
+    "9009" = "Inter-server communication port for low-level data access. Used for data exchange, replication, and inter-server communication."
+  }
+  ```
+
+  The cname of the load balancer:
+
+  ```bash
+  terraform output load_balancer_cname
+  ```
+
+  ```response
+  clickhouse-lb-u525.vm.elestio.app
+  ```
+
+  ## Verify that it's working
+
+  ### Verify that clickhouse keeper is running
+
+  Output the cname of the replicas:
+
+  ```bash
+  terraform output replicas_cnames
+  ```
+
+  Connect to each one using the SSH key you generated earlier:
+
+  ```bash
+  ssh -i terraform_rsa root@clickhouse-01-u525.vm.elestio.app
+  ```
+
+  And execute the `mntr` command to verify that the ClickHouse Keeper is running and to get state information about the relationship of the replicas.
+
+  ```bash
+  echo mntr | nc localhost 9181
+  ```
+
+  Response from a leader replica:
+
+  ```response
+  zk_version      v24.1.3.31-stable-135b08cbd28a5832e9e70c3b7d09dd4134845ed3
+  zk_avg_latency  1
+  zk_max_latency  3
+  zk_min_latency  0
+  zk_packets_received     72
+  zk_packets_sent 72
+  zk_num_alive_connections        2
+  zk_outstanding_requests 0
+  zk_server_state leader
+  zk_znode_count  7
+  zk_watch_count  2
+  zk_ephemerals_count     0
+  zk_approximate_data_size        1213
+  zk_key_arena_size       0
+  zk_latest_snapshot_size 0
+  zk_open_file_descriptor_count   103
+  zk_max_file_descriptor_count    1048576
+  zk_followers    2
+  zk_synced_followers     2
+  ```
+
+  Response from a follower node:
+
+  ```response
+  zk_version      v24.1.3.31-stable-135b08cbd28a5832e9e70c3b7d09dd4134845ed3
+  zk_avg_latency  0
+  zk_max_latency  0
+  zk_min_latency  0
+  zk_packets_received     0
+  zk_packets_sent 0
+  zk_num_alive_connections        0
+  zk_outstanding_requests 0
+  zk_server_state follower
+  zk_znode_count  7
+  zk_watch_count  0
+  zk_ephemerals_count     0
+  zk_approximate_data_size        1213
+  zk_key_arena_size       0
+  zk_latest_snapshot_size 0
+  zk_open_file_descriptor_count   92
+  zk_max_file_descriptor_count    1048576
+  ```
+
+  If any replica responds with an error, you can replace it by :
+
+  - Changing the `server_name` in `main.tf` and running `terraform apply`.
+  - Or removing the replica from the `replicas` attribute and running `terraform apply`. Then add it back and run `terraform apply` again.
+
+  ### Verify ClickHouse cluster functionality
+
+  We'll create a database and a table on the cluster with the `ReplicatedMergeTree` table engine. Then we'll insert data from a replica and query it on another replica.
+
+  Let's install the ClickHouse client on your machine: [clickhouse-client](https://clickhouse.tech/docs/en/getting-started/install/)
+
+  <details><summary>Install on MacOS:</summary>
+
+  ```bash
+  brew install --cask clickhouse
+  ```
+
+  </details>
+
+  Output the cname of the replicas:
+
+  ```bash
+  terraform output replicas_cnames
+  ```
+
+  Open two terminals and connect to two different replicas using the ClickHouse client.
+
+  ```bash
+  clickhouse client --host clickhouse-01-u525.vm.elestio.app --port 29000 --user root --password MyPassword1234
+  ```
+
+  ```bash
+  clickhouse client --host clickhouse-02-u525.vm.elestio.app --port 29000 --user root --password MyPassword1234
+  ```
+
+  From `clickhouse-01`, create a database and a table:
+
+  ```sql
+  CREATE DATABASE db1 ON CLUSTER MyCluster;
+  ```
+
+  ```sql
+  CREATE TABLE db1.table1 ON CLUSTER MyCluster
+  (
+      `id` UInt64,
+      `column1` String
+  )
+  ENGINE = ReplicatedMergeTree
+  ORDER BY id;
+  ```
+
+  Still from `clickhouse-01`, insert data into the table:
+
+  ```sql
+  INSERT INTO db1.table1 (id, column1) VALUES (1, 'abc');
+  ```
+
+  From `clickhouse-02`, query the table:
+
+  ```sql
+  SELECT * FROM db1.table1;
+  ```
+
+  The output should be:
+
+  ```response
+  ┌─id─┬─column1─┐
+  │  1 │ abc     │
+  └────┴─────────┘
+  ```
+
+  Now let's do the opposite. Insert data from `clickhouse-02`:
+
+  ```sql
+  INSERT INTO db1.table1 (id, column1) VALUES (2, 'def');
+  ```
+
+  And query the table from `clickhouse-01`:
+
+  ```sql
+  SELECT * FROM db1.table1;
+  ```
+
+  The output should be:
+
+  ```response
+  ┌─id─┬─column1─┐
+  │  1 │ abc     │
+  └────┴─────────┘
+  ┌─id─┬─column1─┐
+  │  2 │ def     │
+  └────┴─────────┘
+  ```
+
+  ## Add new replicas
+
+  You can add new replicas to the cluster by adding them to the `replicas` attribute in the `main.tf` file and running `terraform apply`.
+
+  ```hcl
+  {{ include "documentation/add_new_replicas.tf" }}
+  ```
+
+  The new replica will join the cluster but **will not have by default the data replicated**.
+  You can see that if you connect to the new replica and try to query the table:
+
+  ```bash
+  clickhouse client --host clickhouse-04-u525.vm.elestio.app --port 29000 --user root --password MyPassword1234
+  ```
+
+  ```sql
+  SELECT * FROM db1.table1;
+  ```
+
+  The output should be:
+
+  ```response
+  Code: 81. DB::Exception: Received from clickhouse-04-u525.vm.elestio.app:29000.
+  DB::Exception: Database db1 does not exist. (UNKNOWN_DATABASE)
+  ```
+
+  This behavior is expected with the [ReplicatedMergeTree](https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/replication) table engine.
+
+  We have to create the database and table on the new replica.
+  To help us, we can re-execute the same CREATE queries but adding the `IF NOT EXISTS` clause.
+  The replicas who already have the database and table will ignore the query, and the new replica will create the database and table.
+
+  Execute from any replica:
+
+  ```sql
+  CREATE DATABASE IF NOT EXISTS db1 ON CLUSTER MyCluster;
+  ```
+
+  ```sql
+  CREATE TABLE IF NOT EXISTS db1.table1 ON CLUSTER MyCluster
+  (
+      `id` UInt64,
+      `column1` String
+  )
+  ENGINE = ReplicatedMergeTree
+  ORDER BY id;
+  ```
+
+  Now try again to query the table from the new replica `clickhouse-04`:
+
+  ```sql
+  SELECT * FROM db1.table1;
+  ```
+
+  The output should be:
+
+  ```response
+  ┌─id─┬─column1─┐
+  │  1 │ abc     │
+  └────┴─────────┘
+  ┌─id─┬─column1─┐
+  │  2 │ def     │
+  └────┴─────────┘
+  ```
+
+  ## Sharding
+
+  ClickHouse always has at least one shard for your data, so if you do not split the data across multiple servers, your data will be stored in one shard.
+  Sharding data across multiple servers can be used to divide the load.
+
+  You can for example split the data by region.
+  The next configuration create a cluster with 2 shards (europe and asia) and 2 replicas per shard:
+
+  ```hcl
+  {{ include "documentation/multiple_shards.tf" }}
+  ```
+
+  Europe replicas `clickhouse-01` and `clickhouse-02` will replicate the data between them, and Asia replicas `clickhouse-03` and `clickhouse-04` will replicate the data between them.
+
+  {{ .Footer }}
+  {{ .Inputs }}
+  {{ .Modules }}
+  {{ .Outputs }}
+  {{ .Providers }}
+  {{ .Requirements }}
+  {{ .Resources }}
+
+# see: https://terraform-docs.io/user-guide/configuration/output
+output:
+  file: README.md
+  mode: inject
+  template: |-
+    <!-- BEGIN_TF_DOCS -->
+
+    {{ .Content }}
+
+    <!-- END_TF_DOCS -->
+
+# see: https://terraform-docs.io/user-guide/configuration/sort
+sort:
+  enabled: true
+  by: required
+
+# https://terraform-docs.io/user-guide/configuration/output-values/
+output-values:
+  enabled: false
+  from: ''
+
+# see: https://terraform-docs.io/user-guide/configuration/settings
+settings:
+  anchor: true
+  color: true
+  default: true
+  description: false
+  escape: true
+  hide-empty: false
+  html: true
+  indent: 2
+  lockfile: true
+  read-comments: true
+  required: true
+  sensitive: true
+  type: true
