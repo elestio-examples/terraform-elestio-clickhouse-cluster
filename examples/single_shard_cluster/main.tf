@@ -26,7 +26,7 @@ provider "elestio" {
 }
 
 resource "elestio_project" "project" {
-  name = "Clickhouse Cluster"
+  name = "clickhouse-cluster"
 }
 
 module "cluster" {
