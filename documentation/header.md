@@ -8,13 +8,13 @@ ClickHouse offers high-performance, scalable, and cost-effective analytics on la
 
 ## ClickHouse cluster
 
-![Cluster architecture](https://raw.githubusercontent.com/elestio-examples/terraform-elestio-clickhouse-cluster/main/documentation/cluster_architecture.png)
-
 ClickHouse replication works at the level of an individual table, not the database level.
 A server can store both replicated and non-replicated tables at the same time.
 ClickHouse Keeper is the coordination system for data replication.
 
 https://clickhouse.com/docs/en/architecture/replication
+
+![Cluster architecture](https://raw.githubusercontent.com/elestio-examples/terraform-elestio-clickhouse-cluster/main/documentation/cluster_architecture.png)
 
 ## Module design
 
