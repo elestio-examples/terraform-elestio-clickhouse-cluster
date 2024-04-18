@@ -54,12 +54,12 @@ resource "null_resource" "configure_replicas" {
 
   # Copy the new configuration
   provisioner "file" {
-    source      = "${path.module}/src/docker-compose.yml"
+    source      = "${path.module}/resources/docker-compose.yml"
     destination = "/opt/app/docker-compose.yml"
   }
 
   provisioner "file" {
-    content = templatefile("${path.module}/src/config.xml.tftpl", {
+    content = templatefile("${path.module}/resources/config.xml.tftpl", {
       clickhouse_password       = var.clickhouse_password,
       cluster_name              = var.cluster_name,
       current_replica           = each.value,
@@ -69,7 +69,7 @@ resource "null_resource" "configure_replicas" {
   }
 
   provisioner "file" {
-    content = templatefile("${path.module}/src/users.xml.tftpl", {
+    content = templatefile("${path.module}/resources/users.xml.tftpl", {
       clickhouse_password = var.clickhouse_password
     })
     destination = "/opt/app/config/users.xml"

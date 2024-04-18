@@ -26,15 +26,49 @@ content: |-
 
   ## Usage
 
-  If you want to use this module by itself, you can use the following code:
+  This is a minimal example of how to use the module:
 
   ```hcl
   {{ include "documentation/usage.tf" }}
   ```
 
+  Do not commit your API token, ClickHouse password, SSH key...
+
+  If you want to know all configuration attributes, check the [ClickHouse service documentation](https://registry.terraform.io/providers/elestio/elestio/latest/docs/resources/clickhouse). E.g. you can disable the service firewall with `firewall_enabled = false`.
+
+  You can choose your provider, datacenter, and server type. Look this guide [Providers, Datacenters and Server Types](https://registry.terraform.io/providers/elestio/elestio/latest/docs/guides/providers_datacenters_server_types) to know about the available options.
+
+  If you add more nodes, you may attains the resources limit of your account, please visit your account [quota page](https://dash.elest.io/account/add-quota) to ask for more resources.
+
+  ## Important notes
+
+  When you create replicated table, please use the simplified version:
+
+  ```sql
+  CREATE TABLE table_name (
+      x UInt32
+  ) ENGINE = ReplicatedMergeTree
+  ```
+
+  instead of:
+
+  ```sql
+  CREATE TABLE table_name (
+      x UInt32
+  ) ENGINE = ReplicatedMergeTree(
+      '/clickhouse/tables/{shard}/{database}/table_name',
+      '{replica}',
+      ver
+  )
+  ```
+
+  The module specifies the default path `/clickhouse/tables/{shard}/{database}/{table}`.
+
+  **Do not rename tables** if you used this default path. The path in ClickHouse Keeper cannot be changed, and when the table is renamed, the macros will expand into a different path, the table will refer to a path that does not exist in ClickHouse Keeper, and will go into read-only mode.
+
   ## Complete example
 
-  If you want to deploy everything at once (replicas, load balancer), you can follow this example.
+  If you want to deploy a cluster from scratch, you can follow this example.
 
   We will do the following:
   - Install terraform and copy a ready-to-use configuration
@@ -272,7 +306,7 @@ content: |-
 
   If any replica responds with an error, you can replace it by :
 
-  - Changing the `server_name` in `main.tf` and running `terraform apply`.
+  - Changing the `replica_name` in `main.tf` and running `terraform apply`.
   - Or removing the replica from the `replicas` attribute and running `terraform apply`. Then add it back and run `terraform apply` again.
 
   ### Verify ClickHouse cluster functionality

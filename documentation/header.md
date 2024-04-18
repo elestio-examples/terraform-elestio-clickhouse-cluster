@@ -1,68 +1,40 @@
-# Terraform Module ClickHouse Cluster
+# ClickHouse Cluster Terraform Module Elestio
 
-A terraform module created by [Elestio](https://elest.io/fully-managed-services) that simplifies ClickHouse cluster deployment and scaling.
+This module helps you deploy a ClickHouse Cluster on Elestio with that is configured, scalable and ready to use in minutes.
 
 ## ClickHouse
 
-ClickHouse is an open-source database, fast and efficient for real-time apps and analytics: https://clickhouse.com/use-cases
+ClickHouse offers high-performance, scalable, and cost-effective analytics on large datasets with real-time capabilities and SQL compatibility: https://clickhouse.com/use-cases
 
-## ClickHouse Cluster
-
-In a ClickHouse cluster, the replication works at the level of an individual table, not the database level.
-A server can store both replicated and non-replicated tables at the same time.
-ClickHouse Keeper provides the coordination system for data replication.
-
-We strongly recommend you to read the ClickHouse Replication documentation https://clickhouse.com/docs/en/architecture/replication
+## ClickHouse cluster
 
 ![Cluster architecture](https://raw.githubusercontent.com/elestio-examples/terraform-elestio-clickhouse-cluster/main/documentation/cluster_architecture.png)
 
-## Elestio
+ClickHouse replication works at the level of an individual table, not the database level.
+A server can store both replicated and non-replicated tables at the same time.
+ClickHouse Keeper is the coordination system for data replication.
 
-Elestio is a Fully Managed DevOps platform that helps you deploy services without spending weeks configuring them (security, dns, smtp, ssl, monitoring/alerts, backups, updates). If you want to use this module, you will need an Elestio account.
+https://clickhouse.com/docs/en/architecture/replication
 
-- [Create an account](https://dash.elest.io/signup)
-- [Request the free credits](https://docs.elest.io/books/billing/page/free-trial)
+## Module design
 
-The list of all services you can deploy with Elestio is [here](https://elest.io/fully-managed-services). The list is growing, so if you don't see what you need, let us know.
+This terraform module deploys ClickHouse resources on Elestio.
+Then it connects to the resources using SSH and changes the configuration files to enable replication.
+It updates again the configuration when a replica is added or removed.
 
-## Terraform
+A minimum of 3 replicas and 1 shard is required for the cluster to work.
+
+The Load balancer is recommended to distribute the queries between replicas.
 
 ![Terraform architecture](https://raw.githubusercontent.com/elestio-examples/terraform-elestio-clickhouse-cluster/main/documentation/terraform_architecture.png)
 
-This module :
+## Elestio features
 
-- Deploys independent Elestio ClickHouse services
-- Enables Replication by updating the configuration (`docker-compose.yml`, `config.xml`, `users.xml`)
-- Updates automatically this configuration when you add or remove replicas
+At Elestio, we are developing a platform that helps you deploy services without spending weeks configuring them.
+Services are fully managed with best practices in mind: security, monitoring, backups, updates, and more.
+Check out the [Elestio website](https://elest.io) for more information.
 
-You can scale vertically (upgrading the server type) or horizontally (adding more replicas or shards) without losing data.
+You need to have an Elestio account to use this module.
 
-At least 3 replicas are required to ensure quorum and high availability.
-
-Also, we recommend using the Elestio Load Balancer to distribute the traffic between the replicas.
-
-## Important notes
-
-When you create replicated table, please use the simplified version:
-
-```sql
-CREATE TABLE table_name (
-    x UInt32
-) ENGINE = ReplicatedMergeTree
-```
-
-instead of:
-
-```sql
-CREATE TABLE table_name (
-    x UInt32
-) ENGINE = ReplicatedMergeTree(
-    '/clickhouse/tables/{shard}/{database}/table_name',
-    '{replica}',
-    ver
-)
-```
-
-The module specifies the default path `/clickhouse/tables/{shard}/{database}/{table}`.
-
-Be careful with table renames when using these built-in substitutions. The path in ClickHouse Keeper cannot be changed, and when the table is renamed, the macros will expand into a different path, the table will refer to a path that does not exist in ClickHouse Keeper, and will go into read-only mode.
+- [Create an account](https://dash.elest.io/signup)
+- [Request the free credits](https://docs.elest.io/books/billing/page/free-trial)
